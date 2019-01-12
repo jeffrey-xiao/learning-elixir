@@ -30,7 +30,8 @@ const renderComments = (comments) => {
 
 const renderComment = (comment) => {
   const renderedComment = getCommentTemplate(comment);
-  document.querySelector('.collection').innerHTML += renderedComment;
+  document.querySelector('.collection').innerHTML = renderedComment +
+    document.querySelector('.collection').innerHTML;
 };
 
 const getCommentTemplate = (comment) => {
