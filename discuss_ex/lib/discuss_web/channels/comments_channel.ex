@@ -15,21 +15,25 @@ defmodule DiscussWeb.CommentsChannel do
   end
 
   def handle_in(_name, %{"content" => content}, socket) do
-    %{assigns: %{topic: topic, user_id: user_id}} = socket
+    case socket do
+      %{assigns: %{topic: topic, user_id: user_id}} ->
+        changeset =
+          topic
+          |> Ecto.build_assoc(:comments, user_id: user_id)
+          |> Repo.preload(:user)
+          |> Comment.changeset(%{content: content})
 
-    changeset =
-      topic
-      |> Ecto.build_assoc(:comments, user_id: user_id)
-      |> Repo.preload(:user)
-      |> Comment.changeset(%{content: content})
+        case Repo.insert(changeset) do
+          {:ok, comment} ->
+            broadcast!(socket, "comments:#{topic.id}:new", %{comment: comment})
+            {:reply, :ok, socket}
 
-    case Repo.insert(changeset) do
-      {:ok, comment} ->
-        broadcast!(socket, "comments:#{topic.id}:new", %{comment: comment})
-        {:reply, :ok, socket}
+          {:error, _reason} ->
+            {:reply, {:error, %{errors: changeset}}, socket}
+        end
 
-      {:error, _reason} ->
-        {:reply, {:error, %{errors: changeset}}, socket}
+      _ ->
+        {:reply, {:error, %{errors: "User is not registered."}}, socket}
     end
   end
 end

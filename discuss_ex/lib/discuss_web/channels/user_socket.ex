@@ -9,7 +9,7 @@ defmodule DiscussWeb.UserSocket do
         {:ok, assign(socket, :user_id, user_id)}
 
       {:error, _error} ->
-        :error
+        {:ok, socket}
     end
   end
 
