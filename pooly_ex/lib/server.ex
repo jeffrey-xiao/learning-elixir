@@ -51,6 +51,7 @@ defmodule Pooly.Server do
         ref = Process.monitor(from_pid)
         true = :ets.insert(monitors, {worker, ref})
         {:reply, worker, %{state | workers: rest}}
+
       [] ->
         {:reply, :noproc, state}
     end
@@ -66,6 +67,7 @@ defmodule Pooly.Server do
         true = Process.demonitor(ref)
         true = :ets.delete(monitors, pid)
         {:noreply, %{state | workers: [pid | workers]}}
+
       [] ->
         {:noreply, state}
     end
@@ -82,17 +84,22 @@ defmodule Pooly.Server do
       [[pid]] ->
         true = :ets.delete(monitors, pid)
         {:noreply, %{state | workers: [pid | workers]}}
+
       [[]] ->
         {:noreply, state}
     end
   end
 
-  def handle_info({:EXIT, pid, _reason}, state = %{monitors: monitors, workers: workers, worker_sup: worker_sup}) do
+  def handle_info(
+        {:EXIT, pid, _reason},
+        state = %{monitors: monitors, workers: workers, worker_sup: worker_sup}
+      ) do
     case :ets.lookup(monitors, pid) do
       [{pid, ref}] ->
         true = Process.demonitor(ref)
         true = :ets.delete(monitors, pid)
         {:noreply, %{state | workers: [new_worker(worker_sup) | workers]}}
+
       [] ->
         {:noreply, state}
     end
