@@ -16,6 +16,7 @@ defmodule Weather.MixProject do
       extra_applications: [:logger, :httpoison]
     ]
   end
+
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [

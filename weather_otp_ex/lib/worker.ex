@@ -39,6 +39,7 @@ defmodule WeatherOtp.Worker do
             true -> Map.update!(stats, location, &(&1 + 1))
             false -> Map.put_new(stats, location, 1)
           end
+
         {:reply, "#{temp}°C", new_stats}
 
       _ ->
