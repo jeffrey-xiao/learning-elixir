@@ -17,7 +17,6 @@ defmodule Weather.MixProject do
     ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
       {:httpoison, "~> 0.9.0"},
