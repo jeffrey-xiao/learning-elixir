@@ -18,9 +18,11 @@ defmodule Pooly.Server do
   end
 
   def init(pools_config) do
-    pools_config |> Enum.each(fn(pool_config) ->
+    pools_config
+    |> Enum.each(fn pool_config ->
       {:ok, _pid} = Pooly.PoolsSupervisor.start_child(pool_config)
     end)
+
     {:ok, pools_config}
   end
 end

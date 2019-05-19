@@ -2,7 +2,15 @@ defmodule Pooly.PoolServer do
   use GenServer
 
   defmodule State do
-    defstruct mfa: nil, name: nil, pool_sup: nil, monitors: nil, workers: nil, size: nil, overflow: nil, max_overflow: nil, waiting: nil
+    defstruct mfa: nil,
+              name: nil,
+              pool_sup: nil,
+              monitors: nil,
+              workers: nil,
+              size: nil,
+              overflow: nil,
+              max_overflow: nil,
+              waiting: nil
   end
 
   def start_link(pool_sup: pool_sup, pool_config: pool_config) do
@@ -24,8 +32,14 @@ defmodule Pooly.PoolServer do
   def init([pool_sup, pool_config]) when is_pid(pool_sup) do
     Process.flag(:trap_exit, true)
     monitors = :ets.new(:monitors, [:private])
-    waiting = :queue.new
-    init(pool_config, %State{pool_sup: pool_sup, monitors: monitors, overflow: 0, waiting: waiting})
+    waiting = :queue.new()
+
+    init(pool_config, %State{
+      pool_sup: pool_sup,
+      monitors: monitors,
+      overflow: 0,
+      waiting: waiting
+    })
   end
 
   def init([{:size, size} | rest], state) do
@@ -62,7 +76,7 @@ defmodule Pooly.PoolServer do
       max_overflow: max_overflow,
       waiting: waiting,
       mfa: mfa,
-      name: name,
+      name: name
     } = state
 
     case workers do
@@ -87,12 +101,17 @@ defmodule Pooly.PoolServer do
     end
   end
 
-  def handle_call(:status, _from, %{workers: workers, monitors: monitors, overflow: overflow} = state) do
-    state_name = cond do
-      length(workers) != 0 -> :ready
-      overflow > 0 -> :overflow
-      true -> :full
-    end
+  def handle_call(
+        :status,
+        _from,
+        %{workers: workers, monitors: monitors, overflow: overflow} = state
+      ) do
+    state_name =
+      cond do
+        length(workers) != 0 -> :ready
+        overflow > 0 -> :overflow
+        true -> :full
+      end
 
     {:reply, {state_name, length(workers), :ets.info(monitors, :size)}, state}
   end
@@ -116,7 +135,7 @@ defmodule Pooly.PoolServer do
       monitors: monitors,
       overflow: overflow,
       waiting: waiting,
-      name: name,
+      name: name
     } = state
 
     case :queue.out(waiting) do
@@ -159,7 +178,11 @@ defmodule Pooly.PoolServer do
         {:noreply, new_state}
 
       [] ->
-        {:noreply, %{state | workers: [new_worker(mfa, name) | workers |> Enum.reject(fn pid -> pid == worker_pid end)]}}
+        new_workers = [
+          new_worker(mfa, name) | workers |> Enum.reject(fn pid -> pid == worker_pid end)
+        ]
+
+        {:noreply, %{state | workers: new_workers}}
     end
   end
 
@@ -170,7 +193,7 @@ defmodule Pooly.PoolServer do
       overflow: overflow,
       waiting: waiting,
       mfa: mfa,
-      name: name,
+      name: name
     } = state
 
     case :queue.out(waiting) do

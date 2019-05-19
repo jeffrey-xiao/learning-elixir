@@ -29,18 +29,20 @@ defmodule PoolyTest do
 
   setup do
     Application.stop(:pooly)
+
     pools_config = [
       [name: "1", mfa: {SampleWorker, :start_link, []}, size: 2, max_overflow: 1],
       [name: "2", mfa: {SampleWorker, :start_link, []}, size: 2, max_overflow: 0],
-      [name: "3", mfa: {SampleWorker, :start_link, []}, size: 2, max_overflow: 0],
+      [name: "3", mfa: {SampleWorker, :start_link, []}, size: 2, max_overflow: 0]
     ]
+
     Application.put_env(:pooly, :pools_config, pools_config)
     :ok = Application.start(:pooly)
   end
 
   test "status" do
     require IEx
-    IEx.pry
+    IEx.pry()
     assert Pooly.status("1") == {:ready, 2, 0}
     w1 = Pooly.check_out("1")
     w2 = Pooly.check_out("1")
