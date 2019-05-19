@@ -2,10 +2,10 @@ defmodule Pooly.PoolServer do
   use GenServer
 
   defmodule State do
-    defstruct name: nil, pool_sup: nil, monitors: nil, workers: nil, size: nil, overflow: nil, max_overflow: nil, waiting: nil
+    defstruct mfa: nil, name: nil, pool_sup: nil, monitors: nil, workers: nil, size: nil, overflow: nil, max_overflow: nil, waiting: nil
   end
 
-  def start_link(pool_sup, pool_config) do
+  def start_link(pool_sup: pool_sup, pool_config: pool_config) do
     GenServer.start_link(__MODULE__, [pool_sup, pool_config], name: name(pool_config[:name]))
   end
 
@@ -32,6 +32,10 @@ defmodule Pooly.PoolServer do
     init(rest, %{state | size: size})
   end
 
+  def init([{:mfa, mfa} | rest], state) do
+    init(rest, %{state | mfa: mfa})
+  end
+
   def init([{:name, name} | rest], state) do
     init(rest, %{state | name: name})
   end
@@ -45,8 +49,8 @@ defmodule Pooly.PoolServer do
   end
 
   def init([], state) do
-    %{name: name, size: size} = state
-    workers = prepopulate(size, name)
+    %{name: name, size: size, mfa: mfa} = state
+    workers = prepopulate(size, mfa, name)
     {:ok, %{state | workers: workers}}
   end
 
@@ -57,6 +61,7 @@ defmodule Pooly.PoolServer do
       overflow: overflow,
       max_overflow: max_overflow,
       waiting: waiting,
+      mfa: mfa,
       name: name,
     } = state
 
@@ -68,7 +73,7 @@ defmodule Pooly.PoolServer do
 
       [] when overflow < max_overflow ->
         ref = Process.monitor(from_pid)
-        worker = new_worker(name)
+        worker = new_worker(mfa, name)
         true = :ets.insert(monitors, {worker, ref})
         {:reply, worker, %{state | overflow: overflow + 1}}
 
@@ -122,7 +127,7 @@ defmodule Pooly.PoolServer do
 
       {:empty, _empty} when overflow > 0 ->
         true = Process.unlink(pid)
-        Supervisor.terminate_child(worker_sup_name(name), pid)
+        DynamicSupervisor.terminate_child(worker_sup_name(name), pid)
         %{state | overflow: overflow - 1}
 
       {:empty, _empty} ->
@@ -144,7 +149,7 @@ defmodule Pooly.PoolServer do
 
   def handle_info(
         {:EXIT, worker_pid, _reason},
-        state = %{monitors: monitors, workers: workers, name: name}
+        state = %{monitors: monitors, workers: workers, mfa: mfa, name: name}
       ) do
     case :ets.lookup(monitors, worker_pid) do
       [{worker_pid, ref}] ->
@@ -154,7 +159,7 @@ defmodule Pooly.PoolServer do
         {:noreply, new_state}
 
       [] ->
-        {:noreply, %{state | workers: [new_worker(name) | workers]}}
+        {:noreply, %{state | workers: [new_worker(mfa, name) | workers |> Enum.reject(fn pid -> pid == worker_pid end)]}}
     end
   end
 
@@ -164,12 +169,13 @@ defmodule Pooly.PoolServer do
       monitors: monitors,
       overflow: overflow,
       waiting: waiting,
+      mfa: mfa,
       name: name,
     } = state
 
     case :queue.out(waiting) do
       {{:value, {from, ref}}, rest} ->
-        new_worker = new_worker(name)
+        new_worker = new_worker(mfa, name)
         true = :ets.insert(monitors, {new_worker, ref})
         GenServer.reply(from, new_worker)
         %{state | waiting: rest}
@@ -178,7 +184,7 @@ defmodule Pooly.PoolServer do
         %{state | overflow: overflow - 1}
 
       {:empty, _empty} ->
-        %{state | workers: [new_worker(name) | workers]}
+        %{state | workers: [new_worker(mfa, name) | workers]}
     end
   end
 
@@ -190,20 +196,20 @@ defmodule Pooly.PoolServer do
     :"Server#{pool_name}"
   end
 
-  defp prepopulate(size, name) do
-    prepopulate(size, name, [])
+  defp prepopulate(size, mfa, name) do
+    prepopulate(size, mfa, name, [])
   end
 
-  defp prepopulate(size, _workers_sup, workers) when size < 1 do
+  defp prepopulate(size, _mfa, _name, workers) when size < 1 do
     workers
   end
 
-  defp prepopulate(size, workers_sup, workers) do
-    prepopulate(size - 1, workers_sup, [new_worker(workers_sup) | workers])
+  defp prepopulate(size, mfa, name, workers) do
+    prepopulate(size - 1, mfa, name, [new_worker(mfa, name) | workers])
   end
 
-  defp new_worker(name) do
-    {:ok, worker} = Supervisor.start_child(worker_sup_name(name), [[]])
+  defp new_worker(mfa, pool_name) do
+    {:ok, worker} = Pooly.WorkerSupervisor.start_child(mfa, pool_name)
     Process.link(worker)
     worker
   end

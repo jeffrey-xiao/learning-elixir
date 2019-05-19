@@ -1,9 +1,8 @@
 defmodule Pooly.Server do
   use GenServer
-  import Supervisor.Spec
 
-  def start_link(pool_config) do
-    GenServer.start_link(__MODULE__, pool_config, name: __MODULE__)
+  def start_link(pools_config: pools_config) do
+    GenServer.start_link(__MODULE__, pools_config, name: __MODULE__)
   end
 
   def check_out(pool_name, block, timeout) do
@@ -20,13 +19,8 @@ defmodule Pooly.Server do
 
   def init(pools_config) do
     pools_config |> Enum.each(fn(pool_config) ->
-      {:ok, _pid} = Supervisor.start_child(Pooly.PoolsSupervisor, supervisor_spec(pool_config))
+      {:ok, _pid} = Pooly.PoolsSupervisor.start_child(pool_config)
     end)
     {:ok, pools_config}
-  end
-
-  defp supervisor_spec(pool_config) do
-    opts = [id: :"Supervisor#{pool_config[:name]}"]
-    supervisor(Pooly.PoolSupervisor, [pool_config], opts)
   end
 end

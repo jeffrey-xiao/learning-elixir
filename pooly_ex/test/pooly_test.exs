@@ -39,6 +39,8 @@ defmodule PoolyTest do
   end
 
   test "status" do
+    require IEx
+    IEx.pry
     assert Pooly.status("1") == {:ready, 2, 0}
     w1 = Pooly.check_out("1")
     w2 = Pooly.check_out("1")
