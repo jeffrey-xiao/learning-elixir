@@ -41,34 +41,52 @@ defmodule PoolyTest do
   end
 
   test "status" do
-    require IEx
-    IEx.pry()
     assert Pooly.status("1") == {:ready, 2, 0}
     w1 = Pooly.check_out("1")
+    assert is_pid(w1)
     w2 = Pooly.check_out("1")
+    assert is_pid(w2)
     assert Pooly.status("1") == {:full, 0, 2}
     w3 = Pooly.check_out("1")
+    assert is_pid(w3)
     assert Pooly.status("1") == {:overflow, 0, 3}
-    Pooly.check_in("1", w3)
+    assert Pooly.check_in("1", w3) == :ok
     assert Pooly.status("1") == {:full, 0, 2}
-    Pooly.check_in("1", w2)
-    Pooly.check_in("1", w1)
+    assert Pooly.check_in("1", w2) == :ok
+    assert Pooly.check_in("1", w1) == :ok
     assert Pooly.status("1") == {:ready, 2, 0}
   end
 
-  test "blocking checkout" do
+  test "blocking check out" do
     w1 = Pooly.check_out("2")
+    assert is_pid(w1)
     w2 = Pooly.check_out("2")
+    assert is_pid(w2)
     SampleWorker.work(w1, 1000)
     assert Pooly.status("2") == {:full, 0, 2}
     w3 = Pooly.check_out("2", true, :infinity)
-    Pooly.check_out("2", w2)
-    Pooly.check_out("2", w3)
+    assert is_pid(w2)
+    assert Pooly.check_in("2", w2) == :ok
+    assert Pooly.check_in("2", w3) == :ok
   end
 
-  test "full checkout" do
-    Pooly.check_out("2")
-    Pooly.check_out("2")
-    :full = Pooly.check_out("2")
+  test "full check out" do
+    assert is_pid(Pooly.check_out("2"))
+    assert is_pid(Pooly.check_out("2"))
+    assert Pooly.check_out("2") == :full
+  end
+
+  test "non-existent worker check in" do
+    assert Pooly.check_in("1", nil) == {:err, :worker_not_checked_out}
+  end
+
+  test "worker exit" do
+    w1 = Pooly.check_out("2")
+    assert is_pid(w1)
+    assert is_pid(Pooly.check_out("2"))
+    send(w1, :exit)
+    :timer.sleep(1000)
+    assert is_pid(Pooly.check_out("2"))
+    assert Pooly.check_out("2") == :full
   end
 end
