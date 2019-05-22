@@ -14,7 +14,7 @@ defmodule Pooly.MixProject do
   def application do
     [
       mod: {Pooly, []},
-      extra_applications: [:logger],
+      extra_applications: [:logger]
     ]
   end
 
