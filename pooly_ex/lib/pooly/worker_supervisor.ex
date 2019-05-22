@@ -5,7 +5,7 @@ defmodule Pooly.WorkerSupervisor do
     :"WorkerSupervisor#{pool_name}"
   end
 
-  def start_link(pool_config: pool_config) do
+  def start_link(pool_config) do
     {:ok, pool_name} = Keyword.fetch(pool_config, :name)
     DynamicSupervisor.start_link(__MODULE__, [], name: name(pool_name))
   end

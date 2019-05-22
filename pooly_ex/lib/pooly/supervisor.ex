@@ -7,8 +7,8 @@ defmodule Pooly.Supervisor do
 
   def init(pools_config) do
     children = [
-      {Pooly.PoolsSupervisor, args: []},
-      {Pooly.Server, pools_config: pools_config}
+      {Pooly.PoolsSupervisor, []},
+      {Pooly.Server, pools_config}
     ]
 
     opts = [strategy: :one_for_all]

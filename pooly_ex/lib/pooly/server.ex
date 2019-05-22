@@ -1,7 +1,7 @@
 defmodule Pooly.Server do
   use GenServer
 
-  def start_link(pools_config: pools_config) do
+  def start_link(pools_config) do
     GenServer.start_link(__MODULE__, pools_config, name: __MODULE__)
   end
 
