@@ -11,16 +11,21 @@ defmodule Fortune.Server do
 
   def init([]) do
     :random.seed(:os.timestamp())
-    fortunes = "data/fortune.txt"
-               |> File.read!()
-               |> String.split("\n%\n")
+
+    fortunes =
+      "data/fortune.txt"
+      |> File.read!()
+      |> String.split("\n%\n")
+
     {:ok, fortunes}
   end
 
   def handle_call(:fact, _from, fortunes) do
-    fortune = fortunes
-              |> Enum.shuffle()
-              |> List.first()
+    fortune =
+      fortunes
+      |> Enum.shuffle()
+      |> List.first()
+
     {:reply, fortune, fortunes}
   end
 end

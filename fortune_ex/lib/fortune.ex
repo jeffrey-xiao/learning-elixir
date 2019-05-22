@@ -6,8 +6,10 @@ defmodule Fortune do
     case type do
       :normal ->
         Logger.info("Application is started on #{node()}")
+
       {:takeover, old_node} ->
         Logger.info("#{node()} is taking over #{old_node}")
+
       {:failover, old_node} ->
         Logger.info("#{old_node} is failing over to #{node()}")
     end
