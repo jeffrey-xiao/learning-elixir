@@ -7,7 +7,7 @@ defmodule Pooly.WorkerSupervisor do
 
   def start_link(pool_config) do
     {:ok, pool_name} = Keyword.fetch(pool_config, :name)
-    DynamicSupervisor.start_link(__MODULE__, [], name: name(pool_name))
+    DynamicSupervisor.start_link(__MODULE__, nil, name: name(pool_name))
   end
 
   def start_child({module, func, args}, pool_name) do
@@ -15,7 +15,7 @@ defmodule Pooly.WorkerSupervisor do
     DynamicSupervisor.start_child(name(pool_name), child_spec)
   end
 
-  def init([]) do
+  def init(_args) do
     DynamicSupervisor.init(strategy: :one_for_one)
   end
 end

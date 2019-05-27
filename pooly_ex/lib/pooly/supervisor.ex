@@ -7,7 +7,7 @@ defmodule Pooly.Supervisor do
 
   def init(pools_config) do
     children = [
-      {Pooly.PoolsSupervisor, []},
+      {Pooly.PoolsSupervisor, nil},
       {Pooly.Server, pools_config}
     ]
 

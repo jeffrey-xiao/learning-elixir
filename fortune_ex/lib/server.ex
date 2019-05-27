@@ -1,15 +1,15 @@
 defmodule Fortune.Server do
   use GenServer
 
-  def start_link([]) do
-    GenServer.start_link(__MODULE__, [], name: {:global, __MODULE__})
+  def start_link(args) do
+    GenServer.start_link(__MODULE__, args, name: {:global, __MODULE__})
   end
 
   def fact() do
     GenServer.call({:global, __MODULE__}, :fact)
   end
 
-  def init([]) do
+  def init(_args) do
     :random.seed(:os.timestamp())
 
     fortunes =

@@ -14,15 +14,15 @@ defmodule Fortune do
         Logger.info("#{old_node} is failing over to #{node()}")
     end
 
-    Supervisor.start_link(__MODULE__, [], name: {:global, Fortune.Supervisor})
+    Supervisor.start_link(__MODULE__, nil, name: {:global, Fortune.Supervisor})
   end
 
   def fact() do
     Fortune.Server.fact()
   end
 
-  def init([]) do
-    children = [{Fortune.Server, []}]
+  def init(_args) do
+    children = [{Fortune.Server, nil}]
     opts = [strategy: :one_for_one]
     Supervisor.init(children, opts)
   end
